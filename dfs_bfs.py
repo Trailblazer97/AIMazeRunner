@@ -25,12 +25,10 @@ class theMaze:
         self.dfs.pack(side='bottom')
         self.bfs = Button(self.root,text='BFS',command=self.breadthFirstSearch)
         self.bfs.pack(side='bottom')
-
         self.aStarEuc = Button(self.root,text='A*euc',command=self.a_star_euc)
         self.aStarEuc.pack(side='bottom')
         self.aStarMan = Button(self.root,text='A*man',command=self.a_star_man)
         self.aStarMan.pack(side='bottom')
-
         self.reset = Button(self.root,text='Reset',command=self.resetButton)
         self.reset.pack(side='bottom')
         self.fringe = None
@@ -59,7 +57,7 @@ class theMaze:
         elif self.mapstate[r,c] == 2:
             self.drawBox("green", r, c)
         else:
-            self.drawBox("orange", r, c)
+            self.drawBox("gray", r, c)
 
     def update_the_maze_simple(self, row,col):
         if self.mapstate[row,col] == 0:
@@ -69,7 +67,7 @@ class theMaze:
         elif self.mapstate[row,col] == 2:
             self.drawBox("green", row, col)
         else:
-            self.drawBox("orange", row, col)
+            self.drawBox("gray", row, col)
 
     def update_the_whole_maze(self):
         for i in range(self.rows):
@@ -81,7 +79,7 @@ class theMaze:
                 elif self.mapstate[i,j] == 2:
                     self.drawBox("green", i, j)
                 else:
-                    self.drawBox("orange", i, j)
+                    self.drawBox("gray", i, j)
         self.mapstateCopy = np.copy(self.mapstate)
         self.roots.pack(fill = "both", expand = True)
 
@@ -125,13 +123,7 @@ class theMaze:
             return False
 
     def pushNeighboursIfNotVisited(self,xIndex,yIndex,fringe):
-        if(xIndex<self.rows-1):
-            if(self.wasAlreadyVisited(xIndex+1,yIndex) and self.mapstate[xIndex+1,yIndex]!=0):
-                fringe.append([xIndex+1,yIndex])
         
-        if(yIndex<self.rows-1):
-            if(self.wasAlreadyVisited(xIndex,yIndex+1) and self.mapstate[xIndex,yIndex+1]!=0):
-                fringe.append([xIndex,yIndex+1])
         
         if(yIndex>0):
             if(self.wasAlreadyVisited(xIndex,yIndex-1) and self.mapstate[xIndex,yIndex-1]!=0):
@@ -140,10 +132,20 @@ class theMaze:
         if(xIndex>0):
             if(self.wasAlreadyVisited(xIndex-1,yIndex) and self.mapstate[xIndex-1,yIndex]!=0):
                 fringe.append([xIndex-1,yIndex])
+        
+        if(xIndex<self.rows-1):
+            if(self.wasAlreadyVisited(xIndex+1,yIndex) and self.mapstate[xIndex+1,yIndex]!=0):
+                fringe.append([xIndex+1,yIndex])
+        
+        if(yIndex<self.rows-1):
+            if(self.wasAlreadyVisited(xIndex,yIndex+1) and self.mapstate[xIndex,yIndex+1]!=0):
+                fringe.append([xIndex,yIndex+1])
+        
+        
         return fringe
 
     def depthFirstSearch(self):
-        
+        self.mapstate = np.ones((self.rows, self.columns))
         self.fringe = []
         self.fringe.append([0,0])
         ## started by pushing the first node in the fringe
@@ -193,9 +195,8 @@ class theMaze:
                 self.update_the_maze_simple(self.x1, self.y1)
                 traced.append((self.x1, self.y1))
             print(traced)
-                
-
         print(self.visited)
+
     def a_star_euc(self):
         self.a_star("euc")
     def a_star_man(self):
@@ -311,20 +312,34 @@ class theMaze:
         self.fringe.append([qx,qy])
         self.mapstate[qx,qy] = 3
         self.update_the_maze_simple(qx,qy)
-        return False            
-    
+        return False        
 
-
+    def bi_directional_BFS(self):
+        self.fringe = []
+        self.fringe.append([0,0])
+        
+        reverseFringe = [[0,0]]
+        endsDidMeet = False;
+        ## started by pushing the first node in the fringe
+        while(len(self.fringe)>0 and len(reverseFringe)>0):
+            element = self.fringe[0]
+            self.fringe.remove(element)
+            if(element[0]==self.rows-1 and element[1] == self.columns-1):
+                self.mapstate[element[0],element[1]] = 3;
+                self.update_the_maze_simple(element[0],element[1])
+                break;
+            self.fringe = self.pushNeighboursIfNotVisited(element[0],element[1],self.fringe)
+            # print(self.fringe)
+            self.mapstate[element[0],element[1]] = 3;
+            self.update_the_maze_simple(element[0],element[1])
 
     def resetButton(self):
-        print(self.mapstate)
         self.mapstate = self.mapstateCopy
         self.update_the_whole_maze()
 
 
-
 def main():
-    maze = theMaze(10, 11)
+    maze = theMaze(10, 10)
     maze.root.mainloop()
     # print("Starting Depth First Search")
 
