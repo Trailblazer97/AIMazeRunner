@@ -177,8 +177,26 @@ class theMaze:
                     if a >= 0 and b >= 0 and a < self.rows and b < self.columns:
                         if self.mapstate[a, b]!=0:
                             self.q.append(coord)
-        if (self.rows-1, self.columns-1) in self.visited:
-            print("True")
+        if (self.rows-1, self.columns-1) in self.visited:         
+            traced = []
+            self.x1, self.y1 = self.rows-1, self.columns-1
+            self.mapstate[self.x1, self.y1] = 2
+            self.update_the_maze_simple(self.x1, self.y1)
+            traced.append((self.x1, self.y1))
+            while((0, 0) not in traced):
+                neighbours = [(self.x1 + 1, self.y1), (self.x1, self.y1 + 1), (self.x1 - 1, self.y1), (self.x1, self.y1 - 1)]
+                ind = []
+                act_neighbours = []
+                for next in neighbours:
+                    if next in self.visited:
+                        act_neighbours.append(next)
+                        ind.append(self.visited.index(next))
+                self.x1, self.y1 = act_neighbours[ind.index(min(ind))]
+                self.mapstate[self.x1, self.y1] = 2
+                self.update_the_maze_simple(self.x1, self.y1)
+                traced.append((self.x1, self.y1))
+            print(traced)
+                
 
         print(self.visited)
             
