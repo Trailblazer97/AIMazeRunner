@@ -13,22 +13,24 @@ class theMaze:
         self.box = dict()
         self.width = math.ceil(1000/20) #root.winfo_screenwidth()
         self.height = math.ceil(1000/20) # root.winfo_screenheight()
-        self.roots = Canvas(self.root, height = 6*self.height, width = 6* self.width, bg="#666666", highlightthickness=0, bd = 0)
+        self.roots = Canvas(self.root, height = rows*self.height, width = columns* self.width, bg="#666666", highlightthickness=0, bd = 0)
         self.rows = rows
         self.columns = columns
         self.frame = {}
         self.mapstate = np.ones((self.rows, self.columns))
-        # self.make_simple_maze(math.floor(rows*columns/10)*2)
-        # self.make_complicated_maze()
         self.make_rand_maze(0.2)
-        self.update_the_whole_maze()
-        self.updateImg()
         self.roots.pack(fill = "both", expand = True)
         self.root.title("AI Maze")   
         self.dfs = Button(self.root,text='DFS',command=self.depthFirstSearch)   
         self.dfs.pack(side='bottom')
         self.bfs = Button(self.root,text='BFS',command=self.breadthFirstSearch)
         self.bfs.pack(side='bottom')
+
+        self.aStarEuc = Button(self.root,text='A*euc',command=self.a_star_euc)
+        self.aStarEuc.pack(side='bottom')
+        self.aStarMan = Button(self.root,text='A*man',command=self.a_star_man)
+        self.aStarMan.pack(side='bottom')
+
         self.reset = Button(self.root,text='Reset',command=self.resetButton)
         self.reset.pack(side='bottom')
         self.fringe = None
@@ -36,7 +38,6 @@ class theMaze:
 
 
     def updateImg(self):  
-        # self.make_simple_maze(3)
         self.root.after(1000, self.updateImg)
 
     def make_rand_maze(self, prob):
@@ -58,7 +59,7 @@ class theMaze:
         elif self.mapstate[r,c] == 2:
             self.drawBox("green", r, c)
         else:
-            self.drawBox("gray", r, c)
+            self.drawBox("orange", r, c)
 
     def update_the_maze_simple(self, row,col):
         if self.mapstate[row,col] == 0:
@@ -68,7 +69,7 @@ class theMaze:
         elif self.mapstate[row,col] == 2:
             self.drawBox("green", row, col)
         else:
-            self.drawBox("gray", row, col)
+            self.drawBox("orange", row, col)
 
     def update_the_whole_maze(self):
         for i in range(self.rows):
@@ -80,7 +81,7 @@ class theMaze:
                 elif self.mapstate[i,j] == 2:
                     self.drawBox("green", i, j)
                 else:
-                    self.drawBox("gray", i, j)
+                    self.drawBox("orange", i, j)
         self.mapstateCopy = np.copy(self.mapstate)
         self.roots.pack(fill = "both", expand = True)
 
@@ -124,16 +125,6 @@ class theMaze:
             return False
 
     def pushNeighboursIfNotVisited(self,xIndex,yIndex,fringe):
-        
-        
-        if(yIndex>0):
-            if(self.wasAlreadyVisited(xIndex,yIndex-1) and self.mapstate[xIndex,yIndex-1]!=0):
-                fringe.append([xIndex,yIndex-1])
-        
-        if(xIndex>0):
-            if(self.wasAlreadyVisited(xIndex-1,yIndex) and self.mapstate[xIndex-1,yIndex]!=0):
-                fringe.append([xIndex-1,yIndex])
-        
         if(xIndex<self.rows-1):
             if(self.wasAlreadyVisited(xIndex+1,yIndex) and self.mapstate[xIndex+1,yIndex]!=0):
                 fringe.append([xIndex+1,yIndex])
@@ -142,11 +133,17 @@ class theMaze:
             if(self.wasAlreadyVisited(xIndex,yIndex+1) and self.mapstate[xIndex,yIndex+1]!=0):
                 fringe.append([xIndex,yIndex+1])
         
+        if(yIndex>0):
+            if(self.wasAlreadyVisited(xIndex,yIndex-1) and self.mapstate[xIndex,yIndex-1]!=0):
+                fringe.append([xIndex,yIndex-1])
         
+        if(xIndex>0):
+            if(self.wasAlreadyVisited(xIndex-1,yIndex) and self.mapstate[xIndex-1,yIndex]!=0):
+                fringe.append([xIndex-1,yIndex])
         return fringe
 
     def depthFirstSearch(self):
-        self.mapstate = np.ones((self.rows, self.columns))
+        
         self.fringe = []
         self.fringe.append([0,0])
         ## started by pushing the first node in the fringe
@@ -167,8 +164,6 @@ class theMaze:
         while(len(self.q) > 0):
             self.x, self.y = self.q.popleft()        
             self.visited.append((self.x, self.y))
-            # if(self.x, self.y is self.rows-1, self.columns-1):
-            #     break
             self.mapstate[self.x, self.y] = 3
             self.update_the_maze_simple(self.x, self.y)
             for coord in [(self.x + 1, self.y), (self.x, self.y + 1), (self.x - 1, self.y), (self.x, self.y - 1)]:
@@ -177,18 +172,135 @@ class theMaze:
                     if a >= 0 and b >= 0 and a < self.rows and b < self.columns:
                         if self.mapstate[a, b]!=0:
                             self.q.append(coord)
-        if (self.rows-1, self.columns-1) in self.visited:
-            print("True")
+    def a_star_euc(self):
+        self.a_star("euc")
+    def a_star_man(self):
+        self.a_star("man")
+    def a_star(self, heuristic):
+        fstate = np.ones((self.rows, self.columns))
+        fstate = fstate*(math.pow(2,15)-1)       
+        w = self.rows
+        h = self.columns
+        class node():
+            def __init__(self, px, py, x, y):
+                self.n = [x,y]
+                self.p = [px,py]
+        class aListWithState():
+            def __init__(self):
+                self.list = []
+            def add(self, px, py, x, y, f):
+                n = node(px, py, x, y)
+                self.list.append(n)
+                fstate[x,y] = f
+            def popMin(self):
+                fs = []
+                for node in self.list:
+                    x, y = node.n
+                    fs.append(fstate[x,y])
+                index = fs.index(min(fs))
+                node = self.list.pop(index)
+                return node.n, node.p
 
-        print(self.visited)
-            
+        def get_the_f(qx, qy, x, y):
+            return get_the_g(qx, qy, x, y)+get_the_h(x,y)
+        def get_the_g(qx, qy, x, y):  
+            return distance(qx, qy, x, y)
+        def get_the_h(x, y):
+            return distance(x, y, w-1, h-1)
+        def distance(qx, qy, x, y):
+            if "man" in heuristic:
+                return manhattan_distance(qx, qy, x, y)
+            elif "euc" in heuristic:
+                return euclidean_distance(qx, qy, x, y)
+            else:
+                return False
+        def manhattan_distance(qx, qy, x, y):
+            xD = math.fabs(qx-x)
+            yD = math.fabs(qy-y)
+            return xD+yD
+        def euclidean_distance(qx, qy, x, y):
+            xD2 = math.pow(qx-x,2)
+            yD2 = math.pow(qy-y,2)
+            return math.pow(xD2+yD2,1/2)
+        def best_route(theList):
+            nList = []
+            pList = []
+            bestRoute = []
+            for node in theList:
+                nList.append(node.n)
+                pList.append(node.p)
+            n = nList.pop()
+            oldP = pList.pop()
+            bestRoute.insert(0,n)
+            while len(nList)>0:
+                while oldP!=n and len(nList)>0:
+                    n = nList.pop()
+                    p = pList.pop() 
+                bestRoute.insert(0,n)
+                oldP = p
+            return bestRoute
+
+        openList = aListWithState()
+        closedList = aListWithState()
+        openList.add(-1, -1, 0, 0, 0)
+        self.fringe = []
+        self.fringe.append([0,0])
+
+        while(len(openList.list)>0):
+            q, parents = openList.popMin()
+            qx, qy = q
+            pqx, pqy = parents
+            d = [(qx - 1, qy), (qx, qy + 1), (qx + 1, qy), (qx, qy - 1)]
+            shuffle(d)
+            for (xx, yy) in d:
+                if xx==w-1 and yy==h-1:
+                    closedList.add(pqx,pqy,qx,qy,fstate[qx,qy])
+                    self.fringe.append([qx,qy])
+                    self.mapstate[qx,qy] = 3
+                    self.update_the_maze_simple(qx,qy)
+                    closedList.add(qx,qy,xx,yy,fstate[qx,qy])
+                    self.fringe.append([xx,yy])
+                    self.mapstate[xx,yy] = 3
+                    self.update_the_maze_simple(xx,yy)
+                    print("A* algorithm completed!")
+                    return best_route(closedList.list)
+                if xx<0 or xx>=w or yy<0 or yy>=h:
+                    continue
+                if self.mapstate[xx,yy]==0:
+                    continue
+                f = get_the_f( qx, qy, xx, yy)
+                if fstate[xx,yy] <= f:
+                    continue
+                else:
+                    fstate[xx,yy] = f
+                if [xx,yy] in openList.list:
+                    continue
+                openList.add(qx,qy,xx,yy,f)
+            closedList.add(pqx,pqy,qx,qy,fstate[qx,qy])
+            self.fringe.append([qx,qy])
+            self.mapstate[qx,qy] = 3
+            self.update_the_maze_simple(qx,qy)
+
+
+        print("A* algorithm failed!")
+        closedList.add(pqx,pqy,qx,qy,fstate[qx,qy])
+        self.fringe.append([qx,qy])
+        self.mapstate[qx,qy] = 3
+        self.update_the_maze_simple(qx,qy)
+        return False            
+    
+
+
+
     def resetButton(self):
+        print(self.mapstate)
         self.mapstate = self.mapstateCopy
         self.update_the_whole_maze()
 
 
+
 def main():
-    maze = theMaze(10, 10)
+    maze = theMaze(10, 11)
     maze.root.mainloop()
     # print("Starting Depth First Search")
 
