@@ -164,6 +164,8 @@ class theMaze:
         while(len(self.q) > 0):
             self.x, self.y = self.q.popleft()        
             self.visited.append((self.x, self.y))
+            # if(self.x, self.y is self.rows-1, self.columns-1):
+            #     break
             self.mapstate[self.x, self.y] = 3
             self.update_the_maze_simple(self.x, self.y)
             for coord in [(self.x + 1, self.y), (self.x, self.y + 1), (self.x - 1, self.y), (self.x, self.y - 1)]:
@@ -172,6 +174,28 @@ class theMaze:
                     if a >= 0 and b >= 0 and a < self.rows and b < self.columns:
                         if self.mapstate[a, b]!=0:
                             self.q.append(coord)
+        if (self.rows-1, self.columns-1) in self.visited:         
+            traced = []
+            self.x1, self.y1 = self.rows-1, self.columns-1
+            self.mapstate[self.x1, self.y1] = 2
+            self.update_the_maze_simple(self.x1, self.y1)
+            traced.append((self.x1, self.y1))
+            while((0, 0) not in traced):
+                neighbours = [(self.x1 + 1, self.y1), (self.x1, self.y1 + 1), (self.x1 - 1, self.y1), (self.x1, self.y1 - 1)]
+                ind = []
+                act_neighbours = []
+                for next in neighbours:
+                    if next in self.visited:
+                        act_neighbours.append(next)
+                        ind.append(self.visited.index(next))
+                self.x1, self.y1 = act_neighbours[ind.index(min(ind))]
+                self.mapstate[self.x1, self.y1] = 2
+                self.update_the_maze_simple(self.x1, self.y1)
+                traced.append((self.x1, self.y1))
+            print(traced)
+                
+
+        print(self.visited)
     def a_star_euc(self):
         self.a_star("euc")
     def a_star_man(self):
