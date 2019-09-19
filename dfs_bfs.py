@@ -330,7 +330,24 @@ class theMaze:
 		self.update_the_maze_simple(qx,qy)
 		return False            
 	
+	def bi_directional_BFS(self):
+		self.fringe = []
+		self.fringe.append([0,0])
 
+		reverseFringe = [[0,0]]
+		endsDidMeet = False;
+		## started by pushing the first node in the fringe
+		while(len(self.fringe)>0 and len(reverseFringe)>0):
+			element = self.fringe[0]
+			self.fringe.remove(element)
+			if(element[0]==self.rows-1 and element[1] == self.columns-1):
+			    self.mapstate[element[0],element[1]] = 3;
+			    self.update_the_maze_simple(element[0],element[1])
+			    break;
+			self.fringe = self.pushNeighboursIfNotVisited(element[0],element[1],self.fringe)
+			# print(self.fringe)
+			self.mapstate[element[0],element[1]] = 3;
+			self.update_the_maze_simple(element[0],element[1])
 
 
 	def resetButton(self):
