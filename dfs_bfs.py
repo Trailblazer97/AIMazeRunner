@@ -12,14 +12,15 @@ class theMaze:
 	def __init__( self, rows, columns):
 		self.root = Tk()
 		self.box = dict()
-		self.width = math.ceil(500/rows) #root.winfo_screenwidth()
-		self.height = math.ceil(500/columns) # root.winfo_screenheight()
+		self.width = math.ceil(300/rows) #root.winfo_screenwidth()
+		self.height = math.ceil(300/columns) # root.winfo_screenheight()
 		self.roots = Canvas(self.root, height = rows*self.height, width = columns* self.width, bg="#666666", highlightthickness=0, bd = 0)
+		self.frame = {}
+
 		self.rows = rows
 		self.columns = columns
-		self.frame = {}
 		self.mapstate = np.ones((self.rows, self.columns))
-		self.initial_the_canvas()
+		
 		self.make_rand_maze(0.2)
 		self.roots.pack(fill = "both", expand = True)
 		self.root.title("AI Maze")   
@@ -50,19 +51,6 @@ class theMaze:
 		self.mapstateCopy = np.copy(self.mapstate)
 		self.update_the_whole_maze()
 
-
-	def update_the_maze(self, index):
-		c = index%self.rows
-		r = math.floor(index/self.rows)
-		if self.mapstate[r,c] == 0:
-			self.drawBox("black", r, c)
-		elif self.mapstate[r,c] == 1:
-			self.drawBox("white", r, c)
-		elif self.mapstate[r,c] == 2:
-			self.drawBox("green", r, c)
-		else:
-			self.drawBox("orange", r, c)
-
 	def update_the_maze_simple(self, row,col):
 		if self.mapstate[row,col] == 0:
 			self.drawBox("black", row, col)
@@ -76,52 +64,15 @@ class theMaze:
 	def update_the_whole_maze(self):
 		for i in range(self.rows):
 			for j in range(self.columns):
-				if self.mapstate[i,j] == 0:
-					self.drawBox("black", i, j)
-				elif self.mapstate[i,j] == 1:
-					self.drawBox("white", i, j)
-				elif self.mapstate[i,j] == 2:
-					self.drawBox("green", i, j)
-				else:
-					self.drawBox("orange", i, j)
+				self.update_the_maze_simple(i, j)
 		self.mapstateCopy = np.copy(self.mapstate)
-		self.roots.pack(fill = "both", expand = True)
 
-
-	def set_state_of_box(self, *args):
-		if len(args) == 2:
-			self.set_state_of_theId(args[0], args[1])
-		if len(args) == 3:
-			self.set_state_of_theRC(args[0], args[1], args[2])
-	def set_state_of_theId(self, state, index):
-		c = index%self.rows
-		r = math.floor(index/self.rows)
-		self.set_state_of_theRC(state, r, c)       
-	def set_state_of_theRC(self, state, r, c):  
-		# the r and c both starts from zero
-		self.mapstate[r,c] = state
-
-	def drawBox(self, *args):
-		if len(args) == 2:
-			self.drawBoxById(args[0], args[1])
-		if len(args) == 3:
-			self.drawBoxByRC(args[0], args[1], args[2])
-	def drawBoxById(self, color, index):
-		c = index%self.rows
-		r = math.floor(index/self.rows)
-		self.drawBoxByRC(color, r, c)
-	def initial_the_canvas(self):
-		for r in range(0,self.rows):
-			for c in range(0,self.columns):
-				index = self.rows*(r)+c
-				self.frame[index] = Frame(self.roots,width=self.width,height=self.height,bg="white")
-				self.frame[index].pack_propagate(0)
-	def drawBoxByRC(self, color, r,c):
+	def drawBox(self, color, r,c):
 		# the r and c both starts from zero
 		index = self.rows*(r)+c
 		self.frame[index] = Frame(self.roots,width=self.width,height=self.height,bg=color)
 		self.frame[index].pack_propagate(0)
-		self.box[index] = Label(self.frame[index], text=index, borderwidth=10, background=color, width = self.width, height = self.height , fg = "grey", font=("Courier", 19))
+		self.box[index] = Label(self.frame[index], text=index, borderwidth=5, background=color, width = self.width, height = self.height , fg = "grey", font=("Courier", math.ceil(self.height/2)))
 		self.box[index].pack(fill="both", expand=True,side='left')
 		self.frame[index].place(x=(c)*self.width,y=(r)*self.height)
 		self.roots.pack(fill = "both", expand = True)
@@ -205,10 +156,12 @@ class theMaze:
 		print(self.visited)
 		print("BFS %s", time.time()-s)
 	def a_star_euc(self):
+		# Function: A* algorithm with the heuristic, the Euclidean Distance
 		s = time.time()
 		self.a_star("euc")
 		print("euc %s", time.time()-s)
 	def a_star_man(self):
+		# Function: A* algorithm with the heuristic, the Manhattan Distance
 		s = time.time()
 		self.a_star("man")
 		print("man %s", time.time()-s)
@@ -218,10 +171,12 @@ class theMaze:
 		w = self.rows
 		h = self.columns
 		class node():
+			# the node is a data structure, containing n, which is the location of the node, and p, which is the location of the node's parent
 			def __init__(self, px, py, x, y):
 				self.n = [x,y]
 				self.p = [px,py]
 		class aListWithState():
+			# aListWithState is a list of "nodes" 
 			def __init__(self):
 				self.list = []
 			def add(self, px, py, x, y, f):
@@ -229,6 +184,9 @@ class theMaze:
 				self.list.append(n)
 				fstate[x,y] = f
 			def popMin(self):
+				# this method will output the node with smallest f
+				# f is the predicted cost of the node 
+				# f = g + h 
 				fs = []
 				for node in self.list:
 					x, y = node.n
@@ -280,7 +238,8 @@ class theMaze:
 				self.update_the_maze_simple(x,y)
 				print(node)
 			return bestRoute
-
+		# openlist will be the list of nodes, the A* algorithm are insterested in, but did not visit, yet.
+		# closedlist will be the list of nodes, the A* algorithm has visited
 		openList = aListWithState()
 		closedList = aListWithState()
 		openList.add(-1, -1, 0, 0, 0)
@@ -361,7 +320,7 @@ class theMaze:
 
 
 def main():
-	maze = theMaze(20, 20)
+	maze = theMaze(10, 10)
 	maze.root.mainloop()
 	# print("Starting Depth First Search")
 
